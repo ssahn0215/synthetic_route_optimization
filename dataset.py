@@ -44,6 +44,10 @@ class SyntheticTreeDataset(Dataset):
         self.trees = load_trees()
         self.vocab_smis, self.vocab_graphs, self.leaf_smis, self.leaf_graphs = load_molecules()
 
+        self.nonleaf_target = len(self.leaf_smis)
+        self.stop_target = len(self.leaf_smis) + 1
+        self.mask_target = len(self.leaf_smis) + 2
+
     def __len__(self):
         return len(self.trees)
 
@@ -57,11 +61,10 @@ class SyntheticTreeDataset(Dataset):
 
         num_nodes = g.number_of_nodes()
         node2smi = nx.get_node_attributes(g, "smi")
-        nonleaf_target = len(self.leaf_smis)
-        stop_target = len(self.leaf_smis) + 1
+
 
         mp_edge_dict = defaultdict(list)
-        targets = [nonleaf_target]
+        targets = [self.mask_target]
         mp_node_types = [MP_NODE_NONLEAF]
         mp_edge_types = []
 
@@ -82,11 +85,11 @@ class SyntheticTreeDataset(Dataset):
             if child is None:
                 mp_node_types.append(MP_NODE_STOP)
                 stack.pop()
-                targets.append(stop_target)
+                targets.append(self.stop_target)
             elif g.out_degree[child] > 0:
                 mp_node_types.append(MP_NODE_NONLEAF)
                 stack.append((child, mp_child, iter(g[child])))
-                targets.append(nonleaf_target)
+                targets.append(self.nonleaf_target)
             else:
                 mp_node_types.append(MP_NODE_LEAF)
                 targets.append(self.leaf_smis.index(node2smi[child]))

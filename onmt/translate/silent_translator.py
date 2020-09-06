@@ -63,7 +63,7 @@ def build_default_translator():
         ignore_when_blocking=[],
         data_type="text",
         replace_unk=True,
-        gpu=0,
+        gpu=False,
         fast=True,
         sample_rate=16000,
         window_size=.02,
