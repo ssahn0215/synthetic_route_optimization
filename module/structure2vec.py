@@ -63,36 +63,3 @@ class Structure2VecLayer(nn.Module):
         g.ndata.pop("h")
         g.edata.pop("h")
         return self.dropout(h)
-
-
-class Structure2Vec(nn.Module):
-    def __init__(self, num_layers, num_hidden_features, num_atom_features, num_bond_features, dropout=0):
-        super(Structure2Vec, self).__init__()
-        self.num_hidden_features = num_hidden_features
-        self.first_layer = Structure2VecFirstLayer(
-            num_hidden_features, num_atom_features, num_bond_features, dropout=dropout
-        )
-        self.layers = nn.ModuleList(
-            [
-                Structure2VecLayer(num_hidden_features, num_atom_features, num_bond_features, dropout=dropout)
-                for _ in range(num_layers)
-            ]
-        )
-        self.last_layer = nn.Sequential(
-            nn.Linear(num_hidden_features, num_hidden_features), nn.BatchNorm1d(num_hidden_features)
-        )
-
-    def readout(self, g, features):
-        g.ndata["h"] = features
-        h = dgl.readout_nodes(g, 'h', op='mean')
-        return h
-
-    def forward(self, g, device=None):
-        features = self.first_layer(g)
-        for layer in self.layers:
-            features = layer(g, features)
-        features = self.last_layer(features)
-        features = self.readout(g, features)
-
-        return features
-
